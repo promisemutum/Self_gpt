@@ -1,16 +1,14 @@
 import torch
 from config import GPTConfig
 from data_loader import DataLoader
+from models import GPT
 
-# ---------------- CONFIG ----------------
 dataset_name = "RJT1990/GeneralThoughtArchive"
-# ----------------------------------------
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 config = GPTConfig()
 
-# Initialize loader with HF dataset name
-# max_samples=1000 is enough for a quick test. Increase later.
+# Initialize
 loader = DataLoader(
     dataset_name, 
     config.block_size, 
@@ -19,5 +17,14 @@ loader = DataLoader(
     max_samples=1000 
 )
 
-x, y = loader.get_batch('train')
-print(f"\n--- Sample Data ---\n{loader.decode(x[0].tolist())[:200]}...")
+print("Model Initialization...")
+model = GPT(config).to(device)
+print("Model initialized successfully...")
+
+model = torch.compile(model)
+print("Model compiled successfully...")
+
+print("Training started...")    
+x, y =  loader.get_batch('train')
+logits, loss = model(x,y)
+print(f"Logits shape: {logits.shape}, Loss: {loss.item():.4f}")
