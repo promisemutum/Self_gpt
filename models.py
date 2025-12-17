@@ -42,8 +42,8 @@ def apply_rotary_emb(xq, xk, freqs_cis):
     xq_ = torch.view_as_complex(xq.float().reshape(*xq.shape[:-1], -1, 2))
     xk_ = torch.view_as_complex(xk.float().reshape(*xk.shape[:-1], -1, 2))
 
-    # 2. Slice frequencies to match the current sequence length
-    freqs_cis = freqs_cis[:xq.shape[1]]
+    # 2. Slice frequencies to match the current sequence length and move to same device
+    freqs_cis = freqs_cis[:xq.shape[1]].to(xq.device)
 
     # 3. Add singleton dimensions for batch and head to enable broadcasting
     # freqs_cis: (T, D//2) -> (1, T, 1, D//2)

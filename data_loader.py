@@ -50,15 +50,31 @@ class DataLoader:
 
     def get_batch(self, split):
         data = self.train_data if split == 'train' else self.val_data
-        ix = torch.randint(len(data) - self.block_size, (self.batch_size,))
-        x = torch.stack([data[i:i+self.block_size] for i in ix])
-        y = torch.stack([data[i+1:i+self.block_size+1] for i in ix])
         
+        # 1. Generate random indices
+        # If global default is CUDA, this is already on CUDA.
+        ix = torch.randint(len(data) - self.block_size, (self.batch_size,))
+        
+        # 2. Move indices to CPU to slice the main dataset (which is on CPU)
+        ix_cpu = ix.to('cpu')
+        
+        # 3. Slice the data
+        # 'data' is on CPU, so this operation happens on CPU
+        x = torch.stack([data[i:i+self.block_size] for i in ix_cpu])
+        y = torch.stack([data[i+1:i+self.block_size+1] for i in ix_cpu])
+        
+        # 4. Move final batch to GPU
+        # We REMOVE .pin_memory() because it conflicts with some setups
+        # and just move strictly to device.
         if self.device == 'cuda':
-            x, y = x.pin_memory().to(self.device, non_blocking=True), y.pin_memory().to(self.device, non_blocking=True)
+            x = x.to(self.device, non_blocking=True)
+            y = y.to(self.device, non_blocking=True)
         else:
-            x, y = x.to(self.device), y.to(self.device)
+            x = x.to(self.device)
+            y = y.to(self.device)
+            
         return x, y
+
 
     def decode(self, token_ids):
         return self.enc.decode(token_ids)
